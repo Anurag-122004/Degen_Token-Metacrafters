@@ -5,105 +5,106 @@
 4.Checking token balance: Players should be able to check their token balance at any time.
 5.Burning tokens: Anyone should be able to burn tokens, that they own, that are no longer needed.
 */
+
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity  ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "hardhat/console.sol";
 
-contract DegenToken is ERC20("Degen", "DGN"), Ownable(msg.sender), ERC20Burnable {
+contract DegenToken is ERC20, Ownable, ERC20Burnable {
 
-    function mint(address to, uint256 amount) public onlyOwner {
-            _mint(to, amount);
-    }
-
-    function decimals() override public pure returns (uint8) {
-        return 0;
-    }
-
-    function transferringofTokens(address _Reciever, uint256 _value) external {
-        require(balanceOf(msg.sender) >= _value, "You do not have enough Degen tokens");
-        approve(msg.sender, _value);
-        transferFrom(msg.sender, _Reciever, _value);
-    }
-
-    function getokenBalance() external view returns (uint256) {
-        return this.balanceOf(msg.sender);
-    }
-
-    function burningofTokens(uint256 _Value) external {
-        require(balanceOf(msg.sender) >= _Value, "You do not have enough Degen Tokens");
-        _burn(msg.sender, _Value);
-    }
-
-    function convertInttoString(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
-    }
-
-    struct Things {
-        string name;
+    struct thingsInStore {
+        uint ID;
+        string nameofItem;
         uint256 price;
     }
 
-    Things[] public itemsinStore;
+    thingsInStore[] public itemsinStore;
 
-    constructor()  {
-        itemsinStore.push(Things("Sword", 50));
-        itemsinStore.push(Things("Car", 200));
-        itemsinStore.push(Things("Bike", 150));
-        itemsinStore.push(Things("Gun", 100));
-        itemsinStore.push(Things("Shield", 250));
+    constructor() ERC20("Degen","DGN") Ownable(msg.sender) {
+        itemsinStore.push(thingsInStore(1, "Sword", 100));
+        itemsinStore.push(thingsInStore(2, "car", 200));
+        itemsinStore.push(thingsInStore(3, "Bike", 150));
+        itemsinStore.push(thingsInStore(4, "Gun", 300));
+        itemsinStore.push(thingsInStore(5, "Shield", 400));
     }
 
-    mapping(address => uint256) public tokenBalance;
-    event ItemPurchased(address indexed buyer, string itemName, uint256 itemPrice);
-    
-    function shopToRedeemItems() external view returns (string memory) {
-        string memory shopItems = "Available items in store:\n";
-        for (uint256 i = 0; i < itemsinStore.length; i++) {
-            shopItems = string(abi.encodePacked(
-                shopItems,
-                convertInttoString(i + 1),
-                ". ",
-                itemsinStore[i].name,
-                " - ",
-                convertInttoString(itemsinStore[i].price / (10 ** decimals())),
-                " DGN",
-                "\n"
+    function mint(address mintAddress, uint256 _Amount) public onlyOwner {
+        _mint(mintAddress, _Amount);
+    }
+
+    function decimals() override public pure returns(uint8) {
+        return 0;
+    }
+
+    function transferTokens(address _reciever, uint256 _Amount) external {
+        require(_Amount > 0, "Transfer amount must be greater than zero!!");
+        require(balanceOf(msg.sender) >= _Amount, "Balance is low!");
+        _transfer(msg.sender, _reciever, _Amount);
+    }
+
+    function getBalance() external view returns (uint256){
+        return this.balanceOf(msg.sender);
+    }
+
+    function burnTokens(uint256 _Amount) external {
+        require(balanceOf(
+            msg.sender) >= _Amount,
+            "You do not have enough Degen tokens to burn"
+            );
+        _burn(msg.sender, _Amount);
+    }
+
+    function convertInttoString(uint256 _index) internal pure returns (string memory){
+        if ( _index == 0 ) {
+            return "0";
+        }
+
+        uint256 vari = _index;
+        uint256 leng;
+        while ( vari != 0 ) {
+            leng++;
+            vari /= 10;
+        }
+
+        bytes memory bym = new bytes(leng);
+        uint256 x = leng;
+        while ( _index != 0 ){
+            x--;
+            uint8 tempVar = (48 + uint8(_index - _index / 10 * 10));
+            bytes1 byt1 = bytes1(tempVar);
+            bym[x] = byt1;
+            _index /= 10;
+        }
+
+        return string(bym);
+    }
+
+    function shopToRedeem() external view returns (string memory) {
+        string memory shopitems = "Available itmes in store:\n";
+        for (uint256 index = 0; index < itemsinStore.length; index++) {
+            shopitems = string(abi.encodePacked(
+            shopitems,
+            convertInttoString(index + 1),
+            ". ",
+            itemsinStore[index].nameofItem,
+            " - ",
+            convertInttoString(itemsinStore[index].price / (10 ** decimals())),
+            " DGN",
+            "\n"
             ));
         }
-        return shopItems;
+        return shopitems;
     }
 
     function redeemItems(uint256 itemIndex) public {
-        require(itemIndex < itemsinStore.length, "Invalid item index");
-        Things memory item = itemsinStore[itemIndex];
-        require(tokenBalance[msg.sender] >= item.price, "Insufficient token balance");
-        tokenBalance[msg.sender] -= item.price;
-        emit ItemPurchased(msg.sender, item.name, item.price);
-    }
-
-    function addTokenstouserBalance(uint256 amount) public {
-        tokenBalance[msg.sender] += amount;
+        require(itemIndex < itemsinStore.length, 
+                "Invalid Index for an item");
+        thingsInStore memory item = itemsinStore[itemIndex];
+        require(balanceOf(msg.sender) >= item.price,
+                "Tokens are less in account!");
+        _burn(msg.sender, item.price);
     }
 }
